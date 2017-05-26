@@ -54,6 +54,7 @@ def sanitize_names(name):
     name = name.replace("|", " ")
     name = name.replace("?", "")
     name = name.replace("*", "")
+    name = name.replace(".", " ")
 
     return name
 
@@ -167,54 +168,63 @@ for forum in forumList:
 
     # Access each thread and download html + any relevant attachemnts
     for thread in threadList:
-        try:
-            time.sleep(1)
-            print ("Accessing thread: %s" % thread.title)
+        time.sleep(1)
+        print ("Accessing thread: %s" % thread.title)
 
-            # Create folder to hold thread (and escape unsafe path characters)
-            fName = "%s - %s" % (thread.date.strftime("%Y-%m-%d %H:%M"), thread.title)
+        # Create folder to hold thread (and escape unsafe path characters)
+        fName = "%s - %s" % (thread.date.strftime("%Y-%m-%d %H:%M"), thread.title)
 
-            fName = sanitize_names(fName)
+        fName = sanitize_names(fName)
         
-            # Truncate file name to be a max of 90 charcters
-            fName = fName[:90].strip()
+        # Truncate file name to be a max of 90 charcters
+        fName = fName[:90].strip()
 
-            # Create the final file path and folder
-            fThread = fForum.child(fName)
-            Path.mkdir(fThread)
+        # Create the final file path and folder
+        fThread = fForum.child(fName)
+        Path.mkdir(fThread)
 
+        try:
             # Access the thread URL
             page = s.get(thread.url)
             soup = BeautifulSoup(page.text, "lxml")
             table = soup.find("table", class_="efMainTable")
+        except Exception as e:
+            print ("Error isolating data table: %s" % e)
 
-            # Save the table contents as an HTML file
-            # Create a html file name to save the thread
-            fHTML = fThread.child("thread.html")
+        # Save the table contents as an HTML file
+        # Create a html file name to save the thread
+        fHTML = fThread.child("thread.html")
 
+        try:
             with open(fHTML.absolute(), "w", encoding="utf-8", errors="replace") as file:
                 file.write(table.prettify())
+        except Exception as e:
+            print ("Error saving HTML: %s" % e)
 
-            # Collect a list of all the attachments on the page
+        # Collect a list of all the attachments on the page
+        try:
             attachments = table.find_all("a", href=True)
+        except Exception as e:
+            print ("Error finding attachments: %s" % e)
 
-            attachmentList = []
+        attachmentList = []
 
-            for attachment in attachments:
-                try:
-                    if "getAttachment.cfm" in attachment["href"]:
-                        title = attachment.string
-                        url = "http://psn.cshp.ca/%s" % attachment["href"]
-                        attachmentList.append(Attachment(title, url))
-                except Exception as e:
-                    None
-                    #print (e)
+        for attachment in attachments:
+            try:
+                if "getAttachment.cfm" in attachment["href"]:
+                    title = attachment.string
+                    url = "http://psn.cshp.ca/%s" % attachment["href"]
+                    attachmentList.append(Attachment(title, url))
+            except Exception as e:
+                None
+                #print (e)
 
-            # Cycle through each attachment and download it
-            attachmentMatching = []
-            i = 1
+        # Cycle through each attachment and download it
+        attachmentMatching = []
+        i = 1
 
-            for attachment in attachmentList:
+        for attachment in attachmentList:
+            try:
                 onlineFile = s.get(attachment.url)
 
                 if len(attachment.title) > 75:
@@ -239,10 +249,13 @@ for forum in forumList:
                 # Save the file to disk
                 with open(fileName, "wb") as saveFile:
                     saveFile.write(onlineFile.content)
+            except Exception as e:
+                print ("Error saving attachment: %s" % e)
 
-            if attachmentMatching:
+        if attachmentMatching:
+            try:
                 with open(fThread.child("attachments.txt"), "w") as file:
                     for item in attachmentMatching:
                         file.write("%s    |    %s" % (item[0], item[1]))
-        except Exception as e:
-            print (e)
+            except Exception as e:
+                print ("Error saving attachment list: %s" % e)
