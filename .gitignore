@@ -13,3 +13,6 @@
 
 # Project files
 *.pyproj
+
+# Project Extracton Files
+/PSN
