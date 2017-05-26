@@ -167,80 +167,82 @@ for forum in forumList:
 
     # Access each thread and download html + any relevant attachemnts
     for thread in threadList:
-        time.sleep(1)
-        print ("Accessing thread: %s" % thread.title)
+        try:
+            time.sleep(1)
+            print ("Accessing thread: %s" % thread.title)
 
-        # Create folder to hold thread (and escape unsafe path characters)
-        fName = "%s - %s" % (thread.date.strftime("%Y-%m-%d"), thread.title)
+            # Create folder to hold thread (and escape unsafe path characters)
+            fName = "%s - %s" % (thread.date.strftime("%Y-%m-%d %H:%M"), thread.title)
 
-        fName = sanitize_names(fName)
+            fName = sanitize_names(fName)
         
-        # Truncate file name to be a max of 100 charcters
-        fName = fName[:100].strip()
+            # Truncate file name to be a max of 90 charcters
+            fName = fName[:90].strip()
 
-        # Create the final file path and folder
-        fThread = fForum.child(fName)
-        Path.mkdir(fThread)
+            # Create the final file path and folder
+            fThread = fForum.child(fName)
+            Path.mkdir(fThread)
 
-        # Access the thread URL
-        page = s.get(thread.url)
-        soup = BeautifulSoup(page.text, "lxml")
-        table = soup.find("table", class_="efMainTable")
+            # Access the thread URL
+            page = s.get(thread.url)
+            soup = BeautifulSoup(page.text, "lxml")
+            table = soup.find("table", class_="efMainTable")
 
-        # Save the table contents as an HTML file
-        # Create a html file name to save the thread
-        fHTML = fThread.child("thread.html")
+            # Save the table contents as an HTML file
+            # Create a html file name to save the thread
+            fHTML = fThread.child("thread.html")
 
-        with open(fHTML.absolute(), "w", encoding="utf-8", errors="replace") as file:
-            file.write(table.prettify())
+            with open(fHTML.absolute(), "w", encoding="utf-8", errors="replace") as file:
+                file.write(table.prettify())
 
-        # Collect a list of all the attachments on the page
-        attachments = table.find_all("a", href=True)
+            # Collect a list of all the attachments on the page
+            attachments = table.find_all("a", href=True)
 
-        attachmentList = []
+            attachmentList = []
 
-        for attachment in attachments:
-            try:
-                if "getAttachment.cfm" in attachment["href"]:
-                    title = attachment.string
-                    url = "http://psn.cshp.ca/%s" % attachment["href"]
-                    attachmentList.append(Attachment(title, url))
-            except Exception as e:
-                None
-                #print (e)
+            for attachment in attachments:
+                try:
+                    if "getAttachment.cfm" in attachment["href"]:
+                        title = attachment.string
+                        url = "http://psn.cshp.ca/%s" % attachment["href"]
+                        attachmentList.append(Attachment(title, url))
+                except Exception as e:
+                    None
+                    #print (e)
 
-        # Cycle through each attachment and download it
-        attachmentMatching = []
-        i = 1
+            # Cycle through each attachment and download it
+            attachmentMatching = []
+            i = 1
 
-        for attachment in attachmentList:
-            onlineFile = s.get(attachment.url)
+            for attachment in attachmentList:
+                onlineFile = s.get(attachment.url)
 
-            if len(attachment.title) > 75:
-                name = sanitize_names(Path(attachment.title).stem)
-                name = name[:75].strip()
+                if len(attachment.title) > 75:
+                    name = sanitize_names(Path(attachment.title).stem)
+                    name = name[:75].strip()
 
-                extension = Path(attachment.title).ext
-                fileName = "%s%s" % (name, extension)
-            else:
-                fileName = attachment.title
+                    extension = Path(attachment.title).ext
+                    fileName = "%s%s" % (name, extension)
+                else:
+                    fileName = attachment.title
 
-            # Number the attachments to prevent duplicates
-            fileName = "%02d - %s" % (i, fileName)
-            i = i + 1
+                # Number the attachments to prevent duplicates
+                fileName = "%02d - %s" % (i, fileName)
+                i = i + 1
 
-            # Collect the data on the original and update file names for matching later
-            attachmentMatching.append([attachment.title, fileName])
+                # Collect the data on the original and update file names for matching later
+                attachmentMatching.append([attachment.title, fileName])
 
-            # Create the final file name
-            fileName = fThread.child(fileName)
+                # Create the final file name
+                fileName = fThread.child(fileName)
 
-            # Save the file to disk
-            with open(fileName, "wb") as saveFile:
-                saveFile.write(onlineFile.content)
+                # Save the file to disk
+                with open(fileName, "wb") as saveFile:
+                    saveFile.write(onlineFile.content)
 
-        if attachmentMatching:
-            with open(fThread.child("attachments.txt"), "w") as file:
-                for item in attachmentMatching:
-                    file.write("%s    |    %s" % (item[0], item[1]))
-
+            if attachmentMatching:
+                with open(fThread.child("attachments.txt"), "w") as file:
+                    for item in attachmentMatching:
+                        file.write("%s    |    %s" % (item[0], item[1]))
+        except Exception as e:
+            print (e)
