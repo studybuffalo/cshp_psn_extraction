@@ -17,6 +17,7 @@ class Thread:
 class Attachment:
     def __init__(self, title, url):
         self.title = title
+        self.loc = "http://psn.cshp.ca/%s" % url
         self.url = url
 
 def get_rows(url):
@@ -213,7 +214,7 @@ for forum in forumList:
             try:
                 if "getAttachment.cfm" in attachment["href"]:
                     title = attachment.string
-                    url = "http://psn.cshp.ca/%s" % attachment["href"]
+                    url = attachment["href"]
                     attachmentList.append(Attachment(title, url))
             except Exception as e:
                 None
@@ -221,11 +222,13 @@ for forum in forumList:
 
         # Cycle through each attachment and download it
         attachmentMatching = []
-        i = 1
+
+        # Attachment number starts at 3 (1 and 2 are reserved)
+        i = 3
 
         for attachment in attachmentList:
             try:
-                onlineFile = s.get(attachment.url)
+                onlineFile = s.get(attachment.loc)
 
                 if len(attachment.title) > 75:
                     name = sanitize_names(Path(attachment.title).stem)
@@ -241,7 +244,7 @@ for forum in forumList:
                 i = i + 1
 
                 # Collect the data on the original and update file names for matching later
-                attachmentMatching.append([attachment.title, fileName])
+                attachmentMatching.append([attachment.url, attachment.title, fileName])
 
                 # Create the final file name
                 fileName = fThread.child(fileName)
@@ -249,6 +252,7 @@ for forum in forumList:
                 # Save the file to disk
                 with open(fileName, "wb") as saveFile:
                     saveFile.write(onlineFile.content)
+
             except Exception as e:
                 print ("Error saving attachment: %s" % e)
 
@@ -256,6 +260,6 @@ for forum in forumList:
             try:
                 with open(fThread.child("attachments.txt"), "w") as file:
                     for item in attachmentMatching:
-                        file.write("%s    |    %s" % (item[0], item[1]))
+                        file.write("%s    |    %s    |    %s\n" % (item[0], item[1], item[2]))
             except Exception as e:
                 print ("Error saving attachment list: %s" % e)

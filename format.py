@@ -1,5 +1,5 @@
 import sys
-from unipath import Path, DIRS
+from unipath import Path, DIRS, FILES
 from bs4 import BeautifulSoup
 import pdfkit
 
@@ -18,7 +18,8 @@ def format_content(thread):
     oHTML = thread.child("thread.html")
 
     # Add document head
-    nHTML = "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+    nHTML = "<!DOCTYPE html><html><head>"
+    nHTML = "%s%s" % (nHTML, "<meta charset='utf-8'>")
     nHTML = "%s%s" % (nHTML, style)
     nHTML = "%s%s" % (nHTML, "</head>")
 
@@ -43,9 +44,36 @@ def format_content(thread):
         "javascript:" in link["href"]:
             link.unwrap()
 
-    # Update the links to attachments to be relative links
+    # Convert the soup back to an HMTL string
+    nHTML = soup.prettify(formatter="html")
 
-    return soup.prettify()
+    return nHTML
+
+def set_attachment_links(html, type, thread):
+    # Update the links to attachments to be relative links
+     # Update the links to attachments to be relative links
+    aTxt = thread.child("attachments.txt")
+    aList = []
+
+    if aTxt.exists():
+        with open(aTxt, "r") as list:
+            for a in list:
+                split = a.split("    |    ")
+                
+                # Correct for changes in HTML entities
+                split[0] = split[0].replace("&", "&amp;")
+                split[2] = split[2].strip()
+                split[2] = split[2].replace(" ", "%20")
+
+                if type == "pdf":
+                    split[2] = "file:///%s" % split[2]
+
+                if (split[0] in html):
+                    html = html.replace(split[0], split[2])
+                else:
+                    print ("Unable to update attachment %s" % split[1])
+
+    return html
 
 # APPLICATION SETUP
 # Set up root path to generate absolute paths to files
@@ -53,7 +81,7 @@ root = Path(sys.argv[1])
 
 # Set up config for PDF generation
 path_wkthmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-pdfConfig = pdfkit.configuration(wkhtmltopdf=path_wkthmltopdf)
+pdfConfig = pdfkit.configuration(wkhtmltopdf=path_wkthmltopdf, )
 pdfOptions = {"quiet": ""}
 
 # Create the style sheet
@@ -79,14 +107,25 @@ for forum in psn.listdir(filter=DIRS):
         fThread.mkdir()
 
         # Take original thread and generate a new HTML string
-        html = format_content(thread)
-        
+        fhtml = format_content(thread)
+        html = set_attachment_links(fhtml, "html", thread)
+        pdf = set_attachment_links(fhtml, "pdf", thread)
+
         # Create the new html document for backup
-        with open(fThread.child("thread.html"), encoding="utf-8", mode="w") as h:
+        with open(fThread.child("01 - thread.html"), encoding="utf-8", mode="w") as h:
             h.write(html)
         
+
+        # Update the HTML to reference a local file for PDF
+        
+   
         # Create the new PDF document 
-        pdfkit.from_string(html, fThread.child("thread.pdf"), 
+        pdfkit.from_string(pdf, fThread.child("02 - thread.pdf"), 
                            configuration=pdfConfig, options=pdfOptions)
 
         # Move over any attachments to the new folder
+        for attachment in thread.listdir(filter=FILES):
+            print (attachment.name)
+            if attachment.name != "attachments.txt" and \
+               attachment.name != "thread.html":
+                attachment.copy(fThread.child(attachment.name))
