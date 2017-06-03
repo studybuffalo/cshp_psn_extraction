@@ -1,0 +1,51 @@
+body {
+	font-family: tahoma, verdana, arial, sans-serif;
+	font-size: 12
+}
+
+.efMainTable {
+	width: 100%;
+	background-color: #AAAAAA;
+}
+
+.ftlevel1,a.ftlevel1,a.ftlevel1:link,a.ftlevel1:visited,a.ftlevel1:hover,a.ftlevel1:visited:hover {
+	color: White; 
+	font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+	text-decoration: None; 
+	font-weight: bold;
+	background-color: transparent;
+}
+
+a.ftlevel1:hover,a.ftlevel1:visited:hover {
+	text-decoration: Underline; 
+	background-color: transparent;
+}
+
+.ftlevel2,a.ftlevel2,a.ftlevel2:link,a.ftlevel2:visited,a.ftlevel2:hover,a.ftlevel2:visited:hover {
+	color: Black; 
+	font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+	text-decoration: None; 
+	background-color: transparent;
+}
+
+a.ftlevel2:hover,a.ftlevel2:visited:hover {
+	text-decoration: Underline; 
+	background-color: transparent;
+}
+
+.mbrow {
+	padding: 5px;
+	background-color: #ffffff;
+	color: Black;
+	font-weight: normal;
+	font-size: 12;
+}
+
+.ThreadMessageHeader {
+	background-color: #DDDDDD;
+	padding: 5px;
+}
+
+.ThreadMessageDetail {
+	padding: 10px 10px 5px 10px;
+}
