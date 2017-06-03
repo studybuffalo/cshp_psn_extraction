@@ -106,7 +106,7 @@ for forum in psn.listdir(filter=DIRS):
         fThread = fForum.child(thread.components()[-1])
         fThread.mkdir()
 
-        # Take original thread and generate a new HTML string
+        # Take original thread and generate a new HTML strings
         fhtml = format_content(thread)
         html = set_attachment_links(fhtml, "html", thread)
         pdf = set_attachment_links(fhtml, "pdf", thread)
@@ -115,10 +115,6 @@ for forum in psn.listdir(filter=DIRS):
         with open(fThread.child("01 - thread.html"), encoding="utf-8", mode="w") as h:
             h.write(html)
         
-
-        # Update the HTML to reference a local file for PDF
-        
-   
         # Create the new PDF document 
         pdfkit.from_string(pdf, fThread.child("02 - thread.pdf"), 
                            configuration=pdfConfig, options=pdfOptions)
