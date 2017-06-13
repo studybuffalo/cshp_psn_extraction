@@ -84,14 +84,14 @@ password = config.get("cshp", "password")
 driver = webdriver.Chrome()
 
 # Go to login page
-driver.get("http://www.cshp.ca/login_e.asp")
+driver.get("http://www.cshp.ca/user/login")
 
 # Login to CSHP
-tUsername = driver.find_element_by_id("username")
+tUsername = driver.find_element_by_id("edit-name")
 tUsername.clear()
 tUsername.send_keys(username)
 
-tPassword = driver.find_element_by_id("password")
+tPassword = driver.find_element_by_id("edit-pass")
 tPassword.clear()
 tPassword.send_keys(password)
 tPassword.submit()
