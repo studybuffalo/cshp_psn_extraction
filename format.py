@@ -51,7 +51,6 @@ def format_content(thread):
 
 def set_attachment_links(html, type, thread):
     # Update the links to attachments to be relative links
-     # Update the links to attachments to be relative links
     aTxt = thread.child("attachments.txt")
     aList = []
 

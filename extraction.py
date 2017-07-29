@@ -1,7 +1,7 @@
 '''
     CSHP PSN Extraction Tool
 
-    A tool designed to archive the CSHP PSN before sunsetting QID
+    A tool designed to archive the CSHP PSN before sunsetting eForums
 '''
 class Forum:
     def __init__(self, title, url):
