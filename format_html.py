@@ -121,6 +121,5 @@ for forum in psn.listdir(filter=DIRS):
         # Move over any attachments to the new folder
         for attachment in thread.listdir(filter=FILES):
             print (attachment.name)
-            if attachment.name != "attachments.txt" and \
-               attachment.name != "thread.html":
+            if attachment.name != "thread.html":
                 attachment.copy(fThread.child(attachment.name))
