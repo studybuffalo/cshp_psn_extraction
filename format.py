@@ -2,8 +2,8 @@ import sys
 import os
 from unipath import Path, DIRS, FILES
 from bs4 import BeautifulSoup
-import pdfkit
 import comtypes.client
+import pdfkit
 from PyPDF2 import PdfFileMerger, PdfFileReader
 from fpdf import FPDF
 from PIL import Image
@@ -20,7 +20,8 @@ def confirm_manual_conversions(psn):
     autoExt = [".DOC", ".DOCX", ".DOT", ".DOTX", ".DOCM", ".TXT", 
                ".RTF", ".WPD", ".PPT", ".PPTX", ".XLS", ".XLSX",
                ".XLT", ".XLTX", ".CSV", ".PNG", ".GIF", ".JPG",
-               ".JPEG", ".PDF", ".VCF"]
+               ".JPEG", ".PDF", ".VCF", ".HTM", ".HTML", ".MHT",
+               ".EMZ", ".BMP", ".C", ".DAT"]
 
     # List any file that needs to be manually converted
     print ("Below are files that need to be manually converted to PDF:")
@@ -157,7 +158,7 @@ def convert_word(inputFile, outputFile):
     word = comtypes.client.CreateObject('Word.Application')
 
     # Open input file in Word
-    doc = word.Documents.Open(inputFile.absolute().strip())
+    doc = word.Documents.Open(inputFile, ReadOnly=True)
 
     # Save input file as PDF to output file
     doc.SaveAs(outputFile, FileFormat=17)
@@ -172,7 +173,7 @@ def convert_ppt(inputFile, outputFile):
     ppt = comtypes.client.CreateObject("Powerpoint.Application")
 
     # Open input file in Powerpoint
-    deck = ppt.Presentations.Open(inputFile)
+    deck = ppt.Presentations.Open(inputFile, ReadOnly=True)
 
     # Save input file as PDF to output file
     deck.SaveAs(out_file, FileFormat=32)
@@ -181,7 +182,7 @@ def convert_ppt(inputFile, outputFile):
     deck.Close()
     ppt.Quit()
 
-def convert_xls(inputFile, outputFile):
+def convert_xls(temp, inputFile, outputFile):
     """
         Converts: xls xlsx xltx csv
         Note: Saves each worksheet as separate file
@@ -190,7 +191,7 @@ def convert_xls(inputFile, outputFile):
     xls = comtypes.client.CreateObject("Excel.Application")
     
     # Open input file in Powerpoint
-    wb = xls.Workbooks.Open(inputFile)
+    wb = xls.Workbooks.Open(inputFile, ReadOnly=True)
     
     # Cycle through each worksheet
     numWS = wb.Worksheets.Count
@@ -199,9 +200,10 @@ def convert_xls(inputFile, outputFile):
     for i in range(1, numWS+1):
         try:
             # Save worksheet as PDF to output file
-            fileName = "%s_%s" % (outputFile.absolute(), i)
-            fileNames.append(Path(fileName))
-            wb.Worksheets[i].SaveAs(fileName, FileFormat=57)
+            fileName = "%s_%s.pdf" % (outputFile.stem, i)
+            filePath = temp.child(fileName)
+            wb.Worksheets[i].SaveAs(filePath, FileFormat=57)
+            fileNames.append(filePath)
         except Exception as e:
             None
 
@@ -227,6 +229,36 @@ def convert_image(inputFile, outputFile):
 
     # Save the pdf
     pdf.output(outputFile)
+
+def convert_html(inputFile, outputFile):
+    # Set up config for PDF generation
+    path_wkthmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+    pdfConfig = pdfkit.configuration(wkhtmltopdf=path_wkthmltopdf, )
+    pdfOptions = {"quiet": ""}
+
+    # Open the HTML file
+    with open(inputFile, "r") as html:
+        # Convert to PDF
+        pdfkit.from_file(
+            html, outputFile, configuration=pdfConfig, options=pdfOptions)
+
+def convert_emz(temp, inputFile, outputFile):
+    # Unzip the EMZ file
+    with gzip.open(inputFile, "rb") as emf:
+        # Save as a temporary PNG
+        png = Image.open(emf).save(temp.child("temp.png"))
+        inputFile = temp.child("temp.png")
+
+        # Run the PNG conversion
+        convert_image(inputFile, outputFile)
+
+def convert_bmp(temp, inputFile, outputFile):
+    # Save as a temporary PNG
+    png = Image.open(inputFile).save(temp.child("temp.png"))
+    inputFile = temp.child("temp.png")
+
+    # Run the PNG conversion
+    convert_image(inputFile, outputFile)
 
 def format_html(root, thread, fForum, attachments):
     # Create a thread folder for HTML formatting
@@ -289,7 +321,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
                 or ext == ".DOCM" or ext == ".TXT" 
                 or ext == ".RTF" or ext == ".WPD" 
                 or ext == ".VCF"):
-            print ("Converting %s..." % attachment.title)
+            print ("    Converting %s..." % attachment.title)
 
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -305,7 +337,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(fFile)
 
         elif (ext == ".PPT" or ext == ".PPTX"):
-            print ("Converting %s..." % attachment.title)
+            print ("    Converting %s..." % attachment.title)
 
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -322,7 +354,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
 
         elif (ext == ".XLS" or ext == ".XLSX" or ext == ".XLTX" 
                 or ext == ".CSV"):
-            print ("Converting %s..." % attachment.title)
+            print ("    Converting %s..." % attachment.title)
 
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -332,7 +364,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             bookmarks.append(attachment.title)
 
             # Convert spreadsheet documents to PDF
-            outputFiles = convert_xls(oFile, fFile)
+            outputFiles = convert_xls(temp, oFile, fFile)
 
             # Add new PDF files to file list
             for outputFile in outputFiles:
@@ -340,7 +372,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
                 
         elif (ext == ".PNG" or ext == ".GIF" or ext == ".JPG" 
                 or ext == ".JPEG"):
-            print ("Converting %s..." % attachment.title)
+            print ("    Converting %s..." % attachment.title)
 
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -356,7 +388,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(fFile)
 
         elif (ext == ".HTM" or ext == ".HTML" or ext == ".MHT"):
-            print ("Converting %s..." % attachment.title)
+            print ("    Converting %s..." % attachment.title)
             
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -371,8 +403,40 @@ def format_pdf(root, thread, fForum, temp, attachments):
             # Add new PDF to file list
             pdfFiles.append(fFile)
 
+        elif (ext == ".EMZ"):
+            print ("    Converting %s..." % attachment.title)
+            
+            # Create a title page
+            titlePage = create_title_page(temp, attachment.title)
+            pdfFiles.append(titlePage)
+
+            # Add bookmark entry
+            bookmarks.append(attachment.title)
+
+            # Convert images to PDF
+            convert_emz(temp, oFile, fFile)
+
+            # Add new PDF to file list
+            pdfFiles.append(fFile)
+
+        elif (ext ==".BMP"):
+            print ("    Converting %s..." % attachment.title)
+
+            # Create a title page
+            titlePage = create_title_page(temp, attachment.title)
+            pdfFiles.append(titlePage)
+
+            # Add bookmark entry
+            bookmarks.append(attachment.title)
+
+            # Convert images to PDF
+            convert_bmp(emz, oFile, fFile)
+
+            # Add new PDF to file list
+            pdfFiles.append(fFile)
+
         elif (ext == ".PDF"):
-            print ("Copying %s..." % attachment.title)
+            print ("    Copying %s..." % attachment.title)
 
             # Create a title page
             titlePage = create_title_page(temp, attachment.title)
@@ -387,6 +451,10 @@ def format_pdf(root, thread, fForum, temp, attachments):
 
             # Add copied PDF to file list
             pdfFiles.append(tempPDF)
+        
+        elif (ext == ".C" or ext == ".DAT"):
+            # Known attachments to ignore
+            None
 
     # Generate the new final PDF name
     pdfName = "%s.pdf" % thread.components()[-1]
