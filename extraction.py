@@ -178,7 +178,7 @@ for forum in forumList:
         fName = sanitize_names(fName)
         
         # Truncate file name to be a max of 90 charcters
-        fName = fName[:90].strip()
+        fName = fName[:70].strip()
 
         # Create the final file path and folder
         fThread = fForum.child(fName)
@@ -223,16 +223,16 @@ for forum in forumList:
         # Cycle through each attachment and download it
         attachmentMatching = []
 
-        # Attachment number starts at 3 (1 and 2 are reserved)
-        i = 3
+        # Attachment number starts at 2 (1 is reserved for the thread)
+        i = 2
 
         for attachment in attachmentList:
             try:
                 onlineFile = s.get(attachment.loc)
 
-                if len(attachment.title) > 75:
+                if len(attachment.title) > 70:
                     name = sanitize_names(Path(attachment.title).stem)
-                    name = name[:75].strip()
+                    name = name[:70].strip()
 
                     extension = Path(attachment.title).ext
                     fileName = "%s%s" % (name, extension)
@@ -263,3 +263,7 @@ for forum in forumList:
                         file.write("%s    |    %s    |    %s\n" % (item[0], item[1], item[2]))
             except Exception as e:
                 print ("Error saving attachment list: %s" % e)
+
+print ("\n----------------------------------------------------------------------")
+print ("EXTRACTION COMPLETE")
+print ("----------------------------------------------------------------------\n")
