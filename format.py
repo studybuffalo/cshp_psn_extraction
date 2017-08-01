@@ -7,6 +7,7 @@ import pdfkit
 from PyPDF2 import PdfFileMerger, PdfFileReader
 from fpdf import FPDF
 from PIL import Image
+import gzip
 
 class AttachmentData:
     def __init__(self, url, title, file):
@@ -20,7 +21,7 @@ def confirm_manual_conversions(psn):
     autoExt = [".DOC", ".DOCX", ".DOT", ".DOTX", ".DOCM", ".TXT", 
                ".RTF", ".WPD", ".PPT", ".PPTX", ".XLS", ".XLSX",
                ".XLT", ".XLTX", ".CSV", ".PNG", ".GIF", ".JPG",
-               ".JPEG", ".PDF", ".VCF", ".HTM", ".HTML", ".MHT",
+               ".JPEG", ".PDF", ".VCF", ".HTM", ".HTML",
                ".EMZ", ".BMP", ".C", ".DAT"]
 
     # List any file that needs to be manually converted
@@ -156,6 +157,7 @@ def convert_word(inputFile, outputFile):
     """Converts: doc docx dot docm txt rtf wpd vcf"""
     # Open the Microsoft Word Application
     word = comtypes.client.CreateObject('Word.Application')
+    word.visible = True
 
     # Open input file in Word
     doc = word.Documents.Open(inputFile, ReadOnly=True)
@@ -164,34 +166,39 @@ def convert_word(inputFile, outputFile):
     doc.SaveAs(outputFile, FileFormat=17)
 
     # Close files and applications
-    doc.Close()
+    doc.Close(SaveChanges = False)
     word.Quit()
 
 def convert_ppt(inputFile, outputFile):
     """Converts: ppt pptx"""
     # Opens the Microsoft Powerpoint Application
     ppt = comtypes.client.CreateObject("Powerpoint.Application")
+    ppt.visible = True
 
     # Open input file in Powerpoint
-    deck = ppt.Presentations.Open(inputFile, ReadOnly=True)
+    deck = ppt.Presentations.Open(inputFile)
 
     # Save input file as PDF to output file
-    deck.SaveAs(out_file, FileFormat=32)
+    deck.SaveAs(outputFile, FileFormat=32)
 
     # Close files and applications
-    deck.Close()
+    deck.Close(SaveChanges = False)
     ppt.Quit()
 
-def convert_xls(temp, inputFile, outputFile):
+def convert_xls(root, temp, inputFile, outputFile):
     """
         Converts: xls xlsx xltx csv
         Note: Saves each worksheet as separate file
     """
     # Opens the Microsoft Excel Application
     xls = comtypes.client.CreateObject("Excel.Application")
-    
+    xls.visible = True
+
     # Open input file in Powerpoint
-    wb = xls.Workbooks.Open(inputFile, ReadOnly=True)
+    try:
+        wb = xls.Workbooks.Open(inputFile, ReadOnly=True)
+    except:
+        return [root.child("damagedPDF.pdf")]
     
     # Cycle through each worksheet
     numWS = wb.Worksheets.Count
@@ -208,12 +215,12 @@ def convert_xls(temp, inputFile, outputFile):
             None
 
     # Close files and applications
-    wb.Close()
+    wb.Close(SaveChanges = False)
     xls.Quit()
 
     return fileNames
 
-def convert_image(inputFile, outputFile):
+def convert_image(temp, inputFile, outputFile):
     """Converts: png gif jpg jpeg"""
     # Open image and determine size
     image = Image.open(inputFile)
@@ -225,7 +232,14 @@ def convert_image(inputFile, outputFile):
     pdf.add_page()
 
     # Add the image to the page
-    pdf.image(inputFile, 0, 0, 0, 0)
+    try:
+        pdf.image(inputFile, 0, 0, 0, 0)
+    except:
+         # If error, try to convert it
+        png = Image.open(inputFile).save(temp.child("temp.png"))
+        inputFile = temp.child("temp.png")
+
+        pdf.image(inputFile, 0, 0, 0, 0)
 
     # Save the pdf
     pdf.output(outputFile)
@@ -234,13 +248,19 @@ def convert_html(inputFile, outputFile):
     # Set up config for PDF generation
     path_wkthmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
     pdfConfig = pdfkit.configuration(wkhtmltopdf=path_wkthmltopdf, )
-    pdfOptions = {"quiet": ""}
+    pdfOptionsUTF8 = {"quiet": "", "encoding": "UTF-8"}
+    pdfOptionsLatin = {"quiet": "", "encoding": "Latin-1"}
 
     # Open the HTML file
     with open(inputFile, "r") as html:
-        # Convert to PDF
-        pdfkit.from_file(
-            html, outputFile, configuration=pdfConfig, options=pdfOptions)
+        try:
+            # Convert to PDF (UTF-8)
+            pdfkit.from_file(html, outputFile, configuration=pdfConfig, 
+                             options=pdfOptionsUTF8)
+        except:
+            # Convert to PDF (Latin-1)
+            pdfkit.from_file(html, outputFile, configuration=pdfConfig, 
+                    options=pdfOptionsLatin)
 
 def convert_emz(temp, inputFile, outputFile):
     # Unzip the EMZ file
@@ -250,7 +270,7 @@ def convert_emz(temp, inputFile, outputFile):
         inputFile = temp.child("temp.png")
 
         # Run the PNG conversion
-        convert_image(inputFile, outputFile)
+        convert_image(temp, inputFile, outputFile)
 
 def convert_bmp(temp, inputFile, outputFile):
     # Save as a temporary PNG
@@ -258,7 +278,7 @@ def convert_bmp(temp, inputFile, outputFile):
     inputFile = temp.child("temp.png")
 
     # Run the PNG conversion
-    convert_image(inputFile, outputFile)
+    convert_image(temp, inputFile, outputFile)
 
 def format_html(root, thread, fForum, attachments):
     # Create a thread folder for HTML formatting
@@ -364,7 +384,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             bookmarks.append(attachment.title)
 
             # Convert spreadsheet documents to PDF
-            outputFiles = convert_xls(temp, oFile, fFile)
+            outputFiles = convert_xls(root, temp, oFile, fFile)
 
             # Add new PDF files to file list
             for outputFile in outputFiles:
@@ -382,12 +402,12 @@ def format_pdf(root, thread, fForum, temp, attachments):
             bookmarks.append(attachment.title)
 
             # Convert images to PDF
-            convert_image(oFile, fFile)
+            convert_image(temp, oFile, fFile)
 
             # Add new PDF to file list
             pdfFiles.append(fFile)
 
-        elif (ext == ".HTM" or ext == ".HTML" or ext == ".MHT"):
+        elif (ext == ".HTM" or ext == ".HTML"):
             print ("    Converting %s..." % attachment.title)
             
             # Create a title page
@@ -430,7 +450,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             bookmarks.append(attachment.title)
 
             # Convert images to PDF
-            convert_bmp(emz, oFile, fFile)
+            convert_bmp(temp, oFile, fFile)
 
             # Add new PDF to file list
             pdfFiles.append(fFile)
@@ -462,10 +482,13 @@ def format_pdf(root, thread, fForum, temp, attachments):
 
     if len(pdfFiles) > 1:
         # Attachments present to merge
-        merge = PdfFileMerger()
+        merge = PdfFileMerger(strict=False)
 
         for pdf in pdfFiles:
-            pdf = PdfFileReader(pdf)
+            try:
+                pdf = PdfFileReader(pdf)
+            except:
+                pdf = PdfFileReader(root.child("damagedPDF.pdf"))
 
             if pdf.isEncrypted:
                 try:
@@ -473,7 +496,11 @@ def format_pdf(root, thread, fForum, temp, attachments):
                 except:
                     pdf = root.child("encryptedPDF.pdf")
            
-            merge.append(pdf)
+            try:
+                merge.append(pdf)
+            except:
+                # Fix for known issue with some bookmarks
+                merge.append(pdf, import_bookmarks=False)
 
         with open(pdfLoc, "wb") as mergeFile:
             merge.write(mergeFile)

@@ -213,8 +213,14 @@ for forum in forumList:
         for attachment in attachments:
             try:
                 if "getAttachment.cfm" in attachment["href"]:
+                    # Get file name and cleanse invalid input
                     title = attachment.string
+                    title = title.replace("\t", " ")
+
+                    # Record the url
                     url = attachment["href"]
+
+                    # Save attachment data to list
                     attachmentList.append(Attachment(title, url))
             except Exception as e:
                 None
