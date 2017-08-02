@@ -56,9 +56,18 @@ def sanitize_names(name):
     name = name.replace("?", "")
     name = name.replace("*", "")
     name = name.replace(".", " ")
+    name = name.replace("\t", " ")
 
     return name
 
+def sanitize_extension(ext):
+    # Remove any characters that are not letters
+    # (no known extensions using numbers)
+
+    # Add back leading period
+    ext = ".%s" % ext
+    
+    return ext
 
 import sys
 from unipath import Path
@@ -213,9 +222,8 @@ for forum in forumList:
         for attachment in attachments:
             try:
                 if "getAttachment.cfm" in attachment["href"]:
-                    # Get file name and cleanse invalid input
+                    # Get file name
                     title = attachment.string
-                    title = title.replace("\t", " ")
 
                     # Record the url
                     url = attachment["href"]
@@ -236,15 +244,16 @@ for forum in forumList:
             try:
                 onlineFile = s.get(attachment.loc)
 
-                if len(attachment.title) > 70:
-                    name = sanitize_names(Path(attachment.title).stem)
-                    name = name[:70].strip()
+                # Truncate and sanitize file names
+                name = Path(attachment.title).stem
+                name = sanitize_names(name)
+                name = name[:70].strip()
 
-                    extension = Path(attachment.title).ext
-                    fileName = "%s%s" % (name, extension)
-                else:
-                    fileName = attachment.title
-
+                # Sanitize the extension
+                extension = Path(attachment.title).ext
+                extension = sanitize_extensio(extension)
+                fileName = "%s%s" % (name, extension)
+                
                 # Number the attachments to prevent duplicates
                 fileName = "%02d - %s" % (i, fileName)
                 i = i + 1

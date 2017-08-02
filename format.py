@@ -131,9 +131,10 @@ def set_attachment_links(html, type, thread, attachments=[]):
 
     return html
 
-def create_title_page(temp, title):
+def create_title_page(temp, attachment):
     # Format the title info
-    title = Path(title).stem.strip()
+    title = Path(attachment.title).stem.strip()
+    path = Path(attachment.file).stem.strip()
 
     # Create a new PDF to hold the text
     pdf = FPDF("P", "in", "Letter")
@@ -148,7 +149,7 @@ def create_title_page(temp, title):
     pdf.multi_cell(0, 0.5, title, 0, align="C")
 
     # Save the pdf
-    outputFile = temp.child("title - %s.pdf" % title)
+    outputFile = temp.child("title - %s.pdf" % path)
     pdf.output(outputFile, "F")
 
     return outputFile
@@ -344,7 +345,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -360,7 +361,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -377,7 +378,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -395,7 +396,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -411,7 +412,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
             
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -427,7 +428,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
             
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -443,7 +444,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Converting %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
@@ -459,7 +460,7 @@ def format_pdf(root, thread, fForum, temp, attachments):
             print ("    Copying %s..." % attachment.title)
 
             # Create a title page
-            titlePage = create_title_page(temp, attachment.title)
+            titlePage = create_title_page(temp, attachment)
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
