@@ -145,8 +145,8 @@ def create_title_page(temp, attachment):
 
     # Set the font
     pdf.set_font("Courier", "B", 16)
-
-    pdf.multi_cell(0, 0.5, title, 0, align="C")
+    pageText = "Attachment - %s" % title
+    pdf.multi_cell(0, 0.5, pageText, 0, align="C")
 
     # Save the pdf
     outputFile = temp.child("title - %s.pdf" % path)
@@ -349,7 +349,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert text documents to PDF
             convert_word(oFile, fFile)
@@ -365,7 +366,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert PowerPoint documents to PDF
             convert_ppt(oFile, fFile)
@@ -382,7 +384,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert spreadsheet documents to PDF
             outputFiles = convert_xls(root, temp, oFile, fFile)
@@ -400,7 +403,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert images to PDF
             convert_image(temp, oFile, fFile)
@@ -416,7 +420,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert images to PDF
             convert_html(oFile, fFile)
@@ -432,7 +437,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert images to PDF
             convert_emz(temp, oFile, fFile)
@@ -448,7 +454,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Convert images to PDF
             convert_bmp(temp, oFile, fFile)
@@ -464,7 +471,8 @@ def format_pdf(root, thread, fForum, temp, attachments):
             pdfFiles.append(titlePage)
 
             # Add bookmark entry
-            bookmarks.append(attachment.title)
+            bookmarks.append("Attachment - %s" % attachment.title)
+            bookmarks.append(None)
 
             # Copy PDF to temp directory
             tempPDF = temp.child(oFile.name)
@@ -485,6 +493,9 @@ def format_pdf(root, thread, fForum, temp, attachments):
         # Attachments present to merge
         merge = PdfFileMerger(strict=False)
 
+        # Bookmark counter
+        i = 0
+
         for pdf in pdfFiles:
             try:
                 pdf = PdfFileReader(pdf)
@@ -497,16 +508,23 @@ def format_pdf(root, thread, fForum, temp, attachments):
                 except:
                     pdf = root.child("encryptedPDF.pdf")
            
-            try:
-                merge.append(pdf)
-            except:
-                # Fix for known issue with some bookmarks
-                merge.append(pdf, import_bookmarks=False)
+            # Even numbers don't get bookmarks
+            if i > 0 and i % 2 == 0:
+                try:
+                    merge.append(pdf)
+                except:
+                    # Fix for known issue with some bookmarks
+                    merge.append(pdf, import_bookmarks=False)
+            else:
+                try:
+                    merge.append(pdf, bookmark=bookmarks[i])
+                except:
+                    # Fix for known issue with some bookmarks
+                    merge.append(pdf, bookmark=bookmarks[i], import_bookmarks=False)
 
+            i = i + 1
         with open(pdfLoc, "wb") as mergeFile:
             merge.write(mergeFile)
-
-        # add bookmarks
 
         merge.close()
 
