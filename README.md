@@ -17,8 +17,12 @@ not used (because in the end, this script only has to work once!)
 The following is unique/useful content that could be applicable projects:
  - Logging into a web-based system and passing the credentials to a 
    Python script
+    - Uses the selenium webdriver library
  - Navigating through web pages with a Python script
+    - Uses the requests library
  - Conversion of multiple file types to PDF (.doc, .docx, .dot, .dotx, 
    .docm, .txt, .rtf, .wpd, .ppt, .pptx, .xls, .xlsx, .xlt, xltx, .csv, 
    .png, .gif, .jpg/jpeg, .html/htm, .emz, .bmp)
+    - uses the comtypes, PIL, gzip, pdfkit, and fpdf libraries
  - Merging multiple PDFs into a single PDF
+    - Uses the PyPDF2 library
