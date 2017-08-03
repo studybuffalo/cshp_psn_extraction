@@ -8,7 +8,9 @@ work. This required connecting to the eForum and passing the login
 credentials to the script, iterating over the entire forum and 
 downloading the content and any attachments. These files were then 
 processed to either allow viewing in a web browser locally or were 
-all converted into a single PDF.
+all converted into a single PDF. Given that this was a one-time 
+project with a deadline, best-practices were attempted, but often
+not used (because in the end, this script only has to work once!)
 
 
 # Useful Content
