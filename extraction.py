@@ -63,7 +63,9 @@ def sanitize_names(name):
 def sanitize_extension(ext):
     # Remove any characters that are not letters
     # (no known extensions using numbers)
-
+    regex = re.compile("[^a-zA-Z]")
+    ext = regex.sub("", ext)
+    
     # Add back leading period
     ext = ".%s" % ext
     
@@ -251,7 +253,7 @@ for forum in forumList:
 
                 # Sanitize the extension
                 extension = Path(attachment.title).ext
-                extension = sanitize_extensio(extension)
+                extension = sanitize_extension(extension)
                 fileName = "%s%s" % (name, extension)
                 
                 # Number the attachments to prevent duplicates
